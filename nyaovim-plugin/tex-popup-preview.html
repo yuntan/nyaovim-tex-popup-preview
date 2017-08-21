@@ -1,0 +1,163 @@
+<dom-module id="tex-popup-preview">
+  <template>
+    <link rel="stylesheet" href="katex/katex.min.css">
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.1/katex.min.css" integrity="sha384-BDqcjN11/6D69oC63ObubLHNvQR2fNjin6+AzxA3xalB0swTj17TxVV1tL1Q5Png" crossorigin="anonymous"> -->
+
+    <style>
+      .popup {
+        position: absolute;
+        padding: 8px;
+        border-radius: 8px;
+        display: none;
+        background-color: #dddddd;
+      }
+      .proj {
+        width: 0px;
+        height: 0px;
+        position: absolute;
+        display: none;
+        border: 13px transparent solid;
+        border-top-width: 0;
+        border-bottom-color: #dddddd;
+      }
+      #btn {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+    <span class="proj"></span>
+    <div class="popup">
+      <div></div>
+    </div>
+  </template>
+
+  <script>
+    // workaround for katex
+    // see https://electron.atom.io/docs/faq/#i-can-not-use-jqueryrequirejsmeteorangularjs-in-electron
+    window.nodeRequire = require;
+    window.nodeExports = exports;
+    window.nodeModule = module;
+    delete window.require;
+    delete window.exports;
+    delete window.module;
+  </script>
+
+  <!-- module.exports.render -->
+  <script src="./katex/katex.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.1/katex.min.js" integrity="sha384-sKYm5us3z9/bRQA+cc3gPzqwI5RVgL8vJQx1lpBudr9IzHOR8fnFUH68dz1GsTQw" crossorigin="anonymous"></script> -->
+
+  <script>
+    window.require = window.nodeRequire;
+    window.exports = window.nodeExports;
+    window.module = window.nodeModule;
+  </script>
+
+  <script>
+    (function(){
+      'use strict';
+
+      let popup, proj;
+
+      Polymer({
+        is: 'tex-popup-preview',
+
+        properties: {
+          color: {
+            type: String,
+            value: ''
+          },
+          shown: {
+            type: Boolean,
+            value: false
+          },
+          x: {
+            type: Number,
+            value: 0
+          },
+          y: {
+            type: Number,
+            value: 0
+          },
+          editor: Object,
+        },
+
+        ready: function() { // use function instead of arrow for this
+          popup = document.querySelector('tex-popup-preview .popup')
+          proj = document.querySelector('tex-popup-preview .proj')
+          // popup = document.getElementById('popup');
+          // proj = document.getElementById('proj');
+          if (this.color) {
+            popup.style.backgroundColor = this.color;
+            proj.style.backgroundColor = this.color;
+          }
+          if (this.shown) {
+            this.show(this.x, this.y);
+          }
+          this.client = this.editor.getClient();
+          this.client.on('notification', this.onNotification.bind(this));
+          this.client.subscribe('tex-popup-preview:toggle');
+          this.client.subscribe('tex-popup-preview:open');
+          this.client.subscribe('tex-popup-preview:close');
+        },
+
+        onNotification: function(method, args) {
+          switch (method) {
+            case 'tex-popup-preview:close':
+              if (this.shown) {
+                this.dismiss();
+              }
+              break;
+            case 'tex-popup-preview:open':
+              if (!this.shown) {
+                this.show(...args);
+              }
+              break;
+            case 'tex-popup-preview:toggle':
+              if (this.shown) {
+                this.dismiss();
+              } else {
+                this.show(...args);
+              }
+              break;
+          }
+        },
+
+        setContent: function(tex) {
+          //let elem = popup.childNodes[0];
+          let elem = popup;
+          let displayMode = true;
+          katex.render(tex, elem, {displayMode, throwOnError: false});
+          // module.exports.render(tex, elem, {displayMode, throwOnError: false});
+        },
+
+        show: function(tex, line, col) {
+          this.setContent(tex);
+
+          var loc = this.editor.screen.convertPositionToLocation(line, col - 1);
+          popup.style.left = (loc.x - 20 - 13) + 'px';
+          popup.style.top = (loc.y + 13) + 'px';
+          popup.style.display = 'block';
+          proj.style.left = (loc.x - 13) + 'px';
+          proj.style.top = loc.y + 'px';
+          proj.style.display = 'inline'
+          this.shown = true;
+        },
+
+        dismiss: function() {
+          popup.style.display = 'none';
+          proj.style.display = 'none'
+          this.shown = false;
+        },
+
+        toggle: function(x, y) {
+          if (this.shown) {
+            this.dismiss();
+          } else {
+            this.show(x, y);
+          }
+        },
+      });
+    })();
+  </script>
+</dom-module>
