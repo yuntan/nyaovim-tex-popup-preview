@@ -75,21 +75,19 @@
       // module.exports.render(tex, elem, {displayMode, throwOnError: false});
     },
 
-    show: function(tex, line, col) {
+    show: function(tex) {
       this.setContent(tex);
 
-      var loc = this.editor.screen.convertPositionToLocation(line, col - 1);
-
-      const {line_, col_} = this.editor.store.cursor;
+      const {line, col} = this.editor.store.cursor;
       const {width, height} = this.editor.store.font_attr;
-      const x = col_ * width;
-      const y = line_ * height;
+      const x = col * width;
+      const y = (line + 1) * height;
 
-      popup.style.left = (loc.x - 20 - 13) + 'px';
-      popup.style.top = (loc.y + 13) + 'px';
+      popup.style.left = (x - 20 - 13) + 'px';
+      popup.style.top = (y + 13) + 'px';
       popup.style.display = 'block';
-      proj.style.left = (loc.x - 13) + 'px';
-      proj.style.top = loc.y + 'px';
+      proj.style.left = (x - 13 + width / 2) + 'px';
+      proj.style.top = y + 'px';
       proj.style.display = 'inline'
 
       this.shown = true;
